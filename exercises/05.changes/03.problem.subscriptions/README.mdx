@@ -1,0 +1,57 @@
+# Subscriptions
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/subscriptions~hja2q" />
+
+👨‍💼 When people use our EpicMe journaling MCP, they want the LLM they're using to always have the latest version of their journaling data. Exposing subscriptions for resources (like a particular entry, tag, or video) allows clients to be notified of changes to specific resources the LLM is using in its context or the client may be using for other purposes.
+
+To make this possible, our MCP server needs to support **resource subscriptions**. This means clients can subscribe to updates for specific resources, and the server will notify them when those resources change.
+
+The key to enabling this with the MCP SDK is the `setRequestHandler` method. This lets the server listen for subscription requests from clients and track which URIs they're interested in. When something changes, the server can send a notification to just those clients.
+
+Here's an example:
+
+```ts
+import {
+	SubscribeRequestSchema,
+	UnsubscribeRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
+
+const petSubscriptions = new Set<string>()
+
+// NOTE: the server.server is how the MCP SDK exposes the underlying server
+// instance for more advanced APIs like this one.
+
+// Allow clients to subscribe to updates for a specific pet
+server.server.setRequestHandler(SubscribeRequestSchema, async ({ params }) => {
+	petSubscriptions.add(params.uri)
+	return {} // no specific response data is needed
+})
+
+// Allow clients to unsubscribe from updates
+server.server.setRequestHandler(
+	UnsubscribeRequestSchema,
+	async ({ params }) => {
+		petSubscriptions.delete(params.uri)
+		return {} // no specific response data is needed
+	},
+)
+
+// When a pet's status changes, notify subscribed clients
+function onPetStatusChange(petId: string, newStatus: string) {
+	const uri = `pethotel://pets/${petId}`
+	if (petSubscriptions.has(uri)) {
+		server.server.notification({
+			method: 'notifications/resources/updated',
+			params: { uri, title: `Pet ${petId} status updated to ${newStatus}` },
+		})
+	}
+}
+```
+
+👨‍💼 In our journaling MCP, you'll want to use a similar pattern to let clients subscribe to updates for entries, tags, and videos. When any of these resources change, notify the right clients so their UI stays perfectly in sync.
+
+📜 For more details on `setRequestHandler` and subscriptions, see the [official MCP Server Spec: Resources](https://modelcontextprotocol.io/specification/2025-06-18/server/resources).
+
+The goal is to make real-time updates feel effortless and automatic for users, so they can focus on their journaling—not on hitting the refresh button.
+
+The MCP Inspector supports subscriptions, but [does not currently automatically refresh the UI when a resource changes](https://github.com/modelcontextprotocol/inspector/issues/596). So you'll want to rely on the tests for this one.

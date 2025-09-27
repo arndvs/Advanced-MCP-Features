@@ -1,0 +1,41 @@
+# Resource Template List Changed
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/resource-template-list-changed~lkds0" />
+
+👨‍💼 When people use our EpicMe journaling app, they expect the list of available resources (like journal entries, tags, or even videos) to always reflect what's actually possible right now. Imagine a user just added a new video reflection or created a fresh tag for their latest entry. They want to see those options appear instantly, without needing to refresh or wonder if something is out of sync.
+
+That's why it's so important for our MCP server to notify the client whenever the set of available resources changes, especially when those resources are managed by templates that can expand or contract as the underlying data changes. This keeps the UI feeling alive and responsive, so users always see the right options for their current context, whether they're a first-time journaler or a seasoned reflection pro.
+
+Let's look at an example of how this is done:
+
+```ts lines=16
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+
+const server = new McpServer(
+	{ name: 'DuckCollector', version: '1.0.0' },
+	{
+		capabilities: {
+			resources: { listChanged: true },
+			// ...other capabilities
+		},
+	},
+)
+
+// Whenever the ducky or tag list changes, notify the client
+function updateResourceTemplates() {
+	// ...logic to check for changes...
+	server.sendResourceListChanged()
+}
+```
+
+<callout-success>
+	The MCP SDK makes it easy to keep resource lists in sync. Just call
+	`sendResourceListChanged()` whenever your templates expand (items are added),
+	contract (items are removed), or change metadata.
+</callout-success>
+
+To make this work in our app, you'll want to subscribe to changes in your database and any other dynamic sources (like video uploads). When something changes, call `sendResourceListChanged()` so the client can refresh its resource lists and show users the latest and greatest.
+
+📜 For more details, see the [Server Spec: Resources](https://modelcontextprotocol.io/specification/2025-06-18/server/resources).
+
+The goal is to make resource management feel effortless and immediate for users, so they can focus on their journaling adventures—not on refreshing the page.

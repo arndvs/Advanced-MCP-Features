@@ -1,0 +1,115 @@
+# Advanced Sampling Prompt
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/advanced-sampling-prompt~qyf7c" />
+
+👨‍💼 Now that you've wired up basic sampling, it's time to make your prompt
+have the LLM do something actually useful! Instead of just asking for a generic
+response, you'll craft a prompt that enables the model to suggest relevant tags
+for a new journal entry.
+
+**Here's what you'll do:**
+
+- Update your sampling request to provide the LLM with structured information:
+  the new journal entry, its current tags, and all existing tags in the system.
+- Change the user message to send this data as JSON (`application/json`), not
+  plain text.
+- Write a clear, detailed system prompt that instructs the LLM to make a list of
+  suggested tags that are relevant to the entry and not already applied. Make
+  certain it's instructed on the format of the response.
+- Increase the `maxTokens` to allow for a longer, more detailed response.
+- Test and iterate on your prompt! Try pasting the example JSON into your
+  favorite LLM playground and see how it responds. Refine your instructions
+  until you get the output you want.
+
+<details>
+<summary>Development workflow</summary>
+
+🦉 You can use the JSON below to test your prompt:
+
+1. Write your prompt into the LLM chat
+2. Let it respond (It'll probably ask you to provide the JSON)
+3. Paste the JSON below into the chat and let it respond again
+4. Evaluate the response (make sure it's in the right format)
+5. Repeat in new chats until you're happy with the prompt/response
+
+```json filename=example-user-message.json
+{
+	"entry": {
+		"id": 6,
+		"title": "Day at the Beach with Family",
+		"content": "Spent the whole day at the beach with the family and it couldn't have been better. The kids were totally absorbed in building a massive sandcastle—complete with towers, moats, and even a seaweed flag. We played catch, flew a kite, and waded into the water until our fingers turned into prunes. Rebecca and I went on a shell hunt and found a few keepers. Lunch was sandy PB&Js and watermelon under a big striped umbrella. We stayed until sunset, which painted the sky with ridiculous pinks and oranges. Everyone was sun-tired and happy. Grateful for days like this.",
+		"mood": "grateful",
+		"location": "beach",
+		"weather": "sunny",
+		"isPrivate": 0,
+		"isFavorite": 1,
+		"createdAt": 1746668878,
+		"updatedAt": 1746668878,
+		"tags": [{ "id": 1, "name": "Family" }]
+	},
+	"currentTags": [
+		{
+			"id": 1,
+			"name": "Family",
+			"description": "Spending time with family members",
+			"createdAt": 1746666966,
+			"updatedAt": 1746666966
+		}
+	],
+	"existingTags": [
+		{
+			"id": 1,
+			"name": "Family",
+			"description": "Spending time with family members",
+			"createdAt": 1746666966,
+			"updatedAt": 1746666966
+		},
+		{
+			"id": 2,
+			"name": "Outdoors",
+			"description": "Entries about being outside in nature or open spaces",
+			"createdAt": 1746667900,
+			"updatedAt": 1746667900
+		},
+		{
+			"id": 3,
+			"name": "Exercise",
+			"description": "Physical activity or movement",
+			"createdAt": 1746668000,
+			"updatedAt": 1746668000
+		},
+		{
+			"id": 4,
+			"name": "Food",
+			"description": "Eating, meals, or anything food-related",
+			"createdAt": 1746668001,
+			"updatedAt": 1746668001
+		}
+	]
+}
+```
+
+</details>
+
+This step will help you practice prompt engineering for structured outputs, and
+show you how to use the full power of MCP's sampling API for real-world tasks.
+
+There are tests to help verify your sampling request is working.
+
+To test this in the MCP inspector:
+
+- run the `create_entry` tool
+- check the "Sampling" navigation tab and you should have a sampling request
+- at this point, YOU are the LLM. You can copy paste this into your response:
+
+```json filename=example-sampling-client-response.json
+{
+	"model": "stub-model",
+	"stopReason": "endTurn",
+	"role": "assistant",
+	"content": {
+		"type": "text",
+		"text": "[{\"id\":2},{\"id\":4},{\"name\":\"Beach\",\"description\":\"Activities or experiences at the beach, including sand, water, and seaside fun\"}]"
+	}
+}
+```

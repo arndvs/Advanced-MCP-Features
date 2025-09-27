@@ -1,0 +1,4 @@
+*.ignored.*
+*.ignored
+*.test.*
+package.json

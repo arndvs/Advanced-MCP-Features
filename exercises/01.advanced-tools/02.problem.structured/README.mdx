@@ -1,0 +1,79 @@
+# Structured Output
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/structured-output~egacc" />
+
+👨‍💼 When users open EpicMe, they expect their memories, reflections, and daily adventures to be organized, discoverable, and (most importantly) reliable. Imagine a user writing a heartfelt entry about their day, only to have it saved as a jumbled scroll of text! That would be chaos in their personal archive.
+
+To ensure every tool in EpicMe returns information that is both predictable and easy for the UI (and our friendly LLM assistants) to understand, we use **structured output**. This means every tool response follows a clear, machine-validated shape—no more wild guesses or mysterious blobs of data.
+
+```ts filename=src/tools.ts nocopy lines=5,9,11,15
+{
+  name: 'create_magical_creature',
+  description: `Add a new magical creature to the user's stable.`,
+  inputSchema: { /* ... */ },
+  outputSchema: { creature: magicalCreatureSchema },
+},
+async (input) => {
+  const creature = await agent.db.createCreature(input)
+  const structuredContent = { creature }
+  return {
+    structuredContent,
+    content: [
+      createText(`Creature "${creature.name}" added to your stable!`),
+      createCreatureResourceLink(creature),
+      createText(structuredContent),
+    ],
+  }
+}
+```
+
+Here's what a structured output response looks like:
+
+```json filename=server-response.json nocopy
+{
+	"content": [
+		{
+			"type": "text",
+			"text": "Creature \"Twinklehoof\" added to your stable!"
+		},
+		{
+			"type": "resource_link",
+			"uri": "epicme://creatures/42",
+			"mimeType": "application/json"
+		},
+		{
+			"type": "text",
+			"text": "{\"creature\":{\"id\":42,\"name\":\"Twinklehoof\",\"species\":\"Unicorn\"}}"
+		}
+	],
+	"structuredContent": {
+		"creature": {
+			"id": 42,
+			"name": "Twinklehoof",
+			"species": "Unicorn"
+		}
+	}
+}
+```
+
+<callout-info>
+	Note that the `structuredContent` is a JSON object that matches the
+	`outputSchema` of the tool and we also have a text content that is a JSON
+	string equal to the `structuredContent` object. This is a fallback for clients
+	that don't support structured output and is validated by the MCP Inspector.
+</callout-info>
+
+<callout-muted>
+	📜 For more details on structured output and output schemas, see the [official
+	MCP
+	documentation](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content).
+</callout-muted>
+
+The goal: make every journaling action in EpicMe feel seamless, safe, and delightful—so users can focus on capturing their stories, not on deciphering cryptic responses.
+
+<callout-info>
+	🐨 Note (again): I have you add this to every tool, but feel free to stop and
+	move on.
+</callout-info>
+
+To test this in the MCP inspector, simply connect and click "Tools" and "List Tools," then check the output schema in the response. Then you can run one of the tools and verify the output includes the structured content.

@@ -1,0 +1,28 @@
+{
+  "name": "exercises_01.advanced-tools_01.problem.annotations",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mcp-dev",
+    "dev:mcp": "tsx src/index.ts",
+    "test": "vitest",
+    "typecheck": "tsc",
+    "inspect": "mcp-inspector"
+  },
+  "dependencies": {
+    "@epic-web/invariant": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@epic-web/config": "^1.21.3",
+    "@epic-web/mcp-dev": "*",
+    "@faker-js/faker": "^10.0.0",
+    "@modelcontextprotocol/inspector": "^0.16.7",
+    "@types/node": "^24.5.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "license": "GPL-3.0-only"
+}

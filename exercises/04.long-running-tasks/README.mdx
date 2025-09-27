@@ -1,0 +1,216 @@
+# Long Running Tasks
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/intro~wjyc8" />
+
+In this exercise, you'll learn how to handle long-running tasks in the context of the Model Context Protocol (MCP), with a focus on **progress reporting** and **cancellation**. (As a bonus, you'll also get hands-on experience with JavaScript's `AbortController` and signals, which are essential for managing asynchronous operations that can be cancelled).
+
+## Background
+
+Long-running operations are common in modern applications—think of file uploads, data processing, or external API calls. It's important to:
+
+- **Report progress** to users so they know something is happening.
+- **Allow cancellation** so users can stop an operation if they change their mind or if the operation is taking too long.
+
+The Model Context Protocol (MCP) provides built-in support for both progress and cancellation via notification messages:
+
+- [MCP Progress Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
+- [MCP Cancellation Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
+
+---
+
+## Progress Reporting
+
+When a client wants to receive progress updates for a long-running request, it includes a `progressToken` in the request. The server can then send progress notifications as the operation advances.
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Server
+  Client->>Server: Request (with progressToken)
+  loop While processing
+    Server-->>Client: notifications/progress (progress, total, message)
+  end
+  Server-->>Client: Response (when done)
+```
+
+### Example Messages
+
+**Client Request with Progress Token:**
+
+```json filename=client-request.json nocopy
+{
+	"jsonrpc": "2.0",
+	"id": 5,
+	"method": "tools/call",
+	"params": {
+		"name": "play_fetch",
+		"arguments": {},
+		"_meta": {
+			"progressToken": "abc123"
+		}
+	}
+}
+```
+
+**Server Progress Notification:**
+
+```json filename=server-progress-notification-request.json nocopy
+{
+	"jsonrpc": "2.0",
+	"method": "notifications/progress",
+	"params": {
+		"progressToken": "abc123",
+		"progress": 50,
+		"total": 100,
+		"message": "Stick thrown, dog is running"
+	}
+}
+```
+
+**Server Final Response:**
+
+```json filename=server-response.json nocopy
+{
+	"jsonrpc": "2.0",
+	"id": 5,
+	"result": {
+		"content": [
+			{
+				"type": "text",
+				"text": "Dog successfully fetched stick"
+			},
+			{
+				"type": "text",
+				"text": "{\"status\": \"success\"}"
+			}
+		],
+		"structuredContent": {
+			"status": "success"
+		}
+	}
+}
+```
+
+For more details, see the [MCP Progress Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress).
+
+---
+
+## Cancellation
+
+Either the client or server can request cancellation of an in-progress request by sending a cancellation notification. The receiver should stop processing the request and free any associated resources.
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Server
+  Client->>Server: Request (id: 123)
+  Note over Client,Server: Request is in progress
+  Client-->>Server: notifications/cancelled (requestId: 123, reason)
+  Server--xClient: (No response for cancelled request)
+```
+
+### Example Messages
+
+**Client Cancellation Notification:**
+
+```json filename=client-cancelled-notification-request.json nocopy
+{
+	"jsonrpc": "2.0",
+	"method": "notifications/cancelled",
+	"params": {
+		"requestId": 5,
+		"reason": "User requested cancellation, dog is too tired"
+	}
+}
+```
+
+- The server should stop processing the request and not send a response for the cancelled request.
+- If the request is already complete or unknown, the server may ignore the cancellation notification.
+
+For more details, see the [MCP Cancellation Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation).
+
+---
+
+## Example: Using AbortController and Signals
+
+Not everyone is familiar with signals and the `AbortController` API. Here's a simple example to illustrate how it works:
+
+```js
+const { spawn } = require('child_process')
+const controller = new AbortController()
+const signal = controller.signal
+
+// Track the child process that needs cleanup
+let childProcess = null
+
+// Add an event listener to the signal - this is crucial for cleanup!
+signal.addEventListener('abort', () => {
+	console.log('Signal was aborted! Killing child process...')
+	if (childProcess) {
+		childProcess.kill('SIGTERM')
+		childProcess = null
+		console.log('Child process killed')
+	}
+})
+
+async function doLongTask(signal) {
+	// Start a child process that processes data
+	childProcess = spawn('data-processor', ['--input', 'large-dataset.csv', '--output', 'processed-data.json'], {
+		stdio: ['pipe', 'pipe', 'pipe']
+	})
+
+	try {
+		// Listen to the child process output
+		childProcess.stdout.on('data', (data) => {
+			const output = data.toString().trim()
+			console.log('Child output:', output)
+
+			if (output.includes('Processing complete!')) {
+				console.log('All items processed successfully!')
+			}
+		})
+
+		// Wait for the child process to complete
+		await new Promise((resolve, reject) => {
+			childProcess.on('close', (code) => {
+				if (code === 0) {
+					resolve('Processing completed successfully')
+				} else {
+					reject(new Error(\`Child process exited with code \${code}\``))
+				}
+			})
+
+			childProcess.on('error', reject)
+		})
+
+		return 'Done!'
+	} finally {
+		// Clean up child process when task completes normally
+		if (childProcess) {
+			childProcess.kill('SIGTERM')
+			childProcess = null
+			console.log('Child process cleaned up normally')
+		}
+	}
+}
+
+doLongTask(signal)
+	.then((result) => console.log(result))
+	.catch((err) => console.error(err.message))
+
+// Cancel the operation after 2 seconds
+setTimeout(() => {
+	controller.abort()
+	console.log('Cancellation requested')
+}, 2000)
+```
+
+- The `AbortController` creates a `signal` that can be passed to any async function that supports cancellation.
+- The function checks `signal.aborted` to know if it should stop early.
+- Calling `controller.abort()` triggers the cancellation.
+
+For more details, see the [MDN AbortController documentation](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/signal).

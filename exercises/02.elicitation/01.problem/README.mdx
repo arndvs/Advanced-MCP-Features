@@ -1,0 +1,72 @@
+# Elicit Confirmation
+
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/elicit-confirmation~oaha2" />
+
+👨‍💼 When users interact with our system, they sometimes initiate actions that have significant consequences (like deleting a tag or entry). To ensure users don't accidentally lose something important, we need to pause and ask for explicit confirmation before proceeding.
+
+This is where **elicitation** comes in. Instead of making assumptions, our MCP server can make a structured elicitation request. This lets us ask the user for confirmation in a way that's both clear and robust, and ensures the server only proceeds if the user truly intends to take the action.
+
+```js
+const result = await agent.server.server.elicitInput({
+	message: `Are you sure you want to delete sandwich "The Big Dipper" (ID: 42)?`,
+	requestedSchema: {
+		type: 'object',
+		properties: {
+			confirmed: {
+				type: 'boolean',
+				description: 'Whether to confirm the action',
+			},
+		},
+	},
+})
+const confirmed =
+	result.action === 'accept' && result.content?.confirmed === true
+
+if (!confirmed) {
+	const structuredContent = { success: false, sandwich: existingSandwich }
+	return {
+		structuredContent,
+		content: [
+			{
+				type: 'text',
+				text: `Deleting sandwich "The Big Dipper" (ID: 42) rejected by the user.`,
+			},
+			{
+				type: 'resource_link',
+				uri: `bobby-sandys://sandwiches/${existingSandwich.id}`,
+				name: existingSandwich.name,
+				mimeType: 'application/json',
+			},
+			{
+				type: 'text',
+				text: JSON.stringify(structuredContent),
+			},
+		],
+	}
+}
+```
+
+<callout-success>
+	If the user does not confirm, the system gracefully cancels the action and
+	provides clear feedback (no sandwiches are harmed)!
+</callout-success>
+
+Note you will also want to verify that the client has elicitation capabilities, and if they do not, then just proceed.
+
+```ts
+// the server.server is how the MCP SDK exposes the underlying server
+// instance for more advanced APIs like this one.
+const capabilities = agent.server.server.getClientCapabilities()
+if (capabilities?.elicitation) {
+	// do the elicitation
+} else {
+	// proceed without elicitation
+}
+```
+
+This approach ensures users are always in control of important actions, and the system responds with empathy and clarity.
+
+Test this one out by using the `delete_tag` tool.
+
+🐨 Kody will be there in <InlineFile file="src/tools.ts" /> to help you
+implement this.
