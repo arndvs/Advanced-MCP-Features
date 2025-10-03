@@ -13,8 +13,6 @@ import {
 import { type EpicMeMCP } from './index.ts'
 import { createWrappedVideo } from './video.ts'
 
-// 🧝‍♀️ Because the tool annotations defaults and values are confusing, I'm giving
-// this to you to help you use them correctly!
 type ToolAnnotations = {
 	// defaults to true, so only allow false
 	openWorldHint?: false
@@ -35,9 +33,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Create Entry',
 			description: 'Create a new journal entry',
-			// 🐨 add the appropriate annotations here for create_entry.
-			// 💰 Is this destructive? Is it open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: createEntryInputSchema,
 		},
 		async (entry) => {
@@ -67,9 +66,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Get Entry',
 			description: 'Get a journal entry by ID',
-			// 🐨 add the appropriate annotations here for get_entry.
-			// 💰 Is this read-only? Is it open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				readOnlyHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
 		},
 		async ({ id }) => {
@@ -86,9 +86,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'List Entries',
 			description: 'List all journal entries',
-			// 🐨 add the appropriate annotations here for list_entries.
-			// 💰 Is this read-only? Is it open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				readOnlyHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 		},
 		async () => {
 			const entries = await agent.db.getEntries()
@@ -108,9 +109,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Update Entry',
 			description:
 				'Update a journal entry. Fields that are not provided (or set to undefined) will not be updated. Fields that are set to null or any other value will be updated.',
-			// 🐨 add the appropriate annotations here for update_entry.
-			// 💰 Is this destructive? Idempotent? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: updateEntryInputSchema,
 		},
 		async ({ id, ...updates }) => {
@@ -133,9 +136,9 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Delete Entry',
 			description: 'Delete a journal entry',
-			// 🐨 add the appropriate annotations here for delete_entry.
-			// 💰 Is this idempotent? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
 		},
 		async ({ id }) => {
@@ -159,9 +162,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Create Tag',
 			description: 'Create a new tag',
-			// 🐨 add the appropriate annotations here for create_tag.
-			// 💰 Is this destructive? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: createTagInputSchema,
 		},
 		async (tag) => {
@@ -182,9 +186,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Get Tag',
 			description: 'Get a tag by ID',
-			// 🐨 add the appropriate annotations here for get_tag.
-			// 💰 Is this read-only? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				readOnlyHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
 		},
 		async ({ id }) => {
@@ -201,9 +206,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'List Tags',
 			description: 'List all tags',
-			// 🐨 add the appropriate annotations here for list_tags.
-			// 💰 Is this read-only? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				readOnlyHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 		},
 		async () => {
 			const tags = await agent.db.getTags()
@@ -219,9 +225,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Update Tag',
 			description: 'Update a tag',
-			// 🐨 add the appropriate annotations here for update_tag.
-			// 💰 Is this destructive? Idempotent? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: updateTagInputSchema,
 		},
 		async ({ id, ...updates }) => {
@@ -242,9 +250,9 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Delete Tag',
 			description: 'Delete a tag',
-			// 🐨 add the appropriate annotations here for delete_tag.
-			// 💰 Is this idempotent? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
 		},
 		async ({ id }) => {
@@ -267,9 +275,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Add Tag to Entry',
 			description: 'Add a tag to an entry',
-			// 🐨 add the appropriate annotations here for add_tag_to_entry.
-			// 💰 Is this destructive? Idempotent? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				idempotentHint: true,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: entryTagIdSchema,
 		},
 		async ({ entryId, tagId }) => {
@@ -299,9 +309,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Create Wrapped Video',
 			description:
 				'Create a "wrapped" video highlighting stats of your journaling this year',
-			// 🐨 add the appropriate annotations here for create_wrapped_video.
-			// 💰 Is this destructive? Open world?
-			annotations: {} satisfies ToolAnnotations,
+			annotations: {
+				destructiveHint: false,
+				openWorldHint: false,
+			} satisfies ToolAnnotations,
 			inputSchema: {
 				year: z
 					.number()
