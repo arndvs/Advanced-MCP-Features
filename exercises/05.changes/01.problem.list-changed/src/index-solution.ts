@@ -28,6 +28,8 @@ import { initializeTools } from './tools.ts'
  * - Provides context-aware functionality
  * - Creates a smooth, up-to-date user experience
  * - Ensures users always see the right options for their current context
+ * - Saves context window space by not showing unusable tools/prompts
+ * - Prevents LLM confusion about which tools are actually available
  */
 export class EpicMeMCP {
 	db: DB
@@ -48,6 +50,9 @@ export class EpicMeMCP {
 				// which prompts are available during runtime. The MCP SDK automatically
 				// sends list_changed notifications when prompts are enabled/disabled,
 				// so the client always knows when to refresh its list.
+				// 
+				// Note: While not technically necessary (the SDK supports this by default),
+				// being explicit about this capability makes the server's intentions clear.
 				prompts: { listChanged: true },
 			},
 			instructions: `

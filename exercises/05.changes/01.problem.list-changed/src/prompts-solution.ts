@@ -29,6 +29,12 @@ import { type EpicMeMCP } from './index.ts'
  * This approach ensures users never see irrelevant options (like "suggest tags"
  * when no entries exist), creating a smooth, context-aware experience that
  * eliminates confusion from stale UI elements.
+ * 
+ * Additional Benefits:
+ * - Saves context window space by not showing unusable prompts
+ * - Prevents LLM confusion about which prompts are actually available
+ * - Similar to how a web UI would hide edit/delete buttons when there's no data
+ * - Instructions can still hint at what's possible, but tools/prompts only show when usable
  */
 export async function initializePrompts(agent: EpicMeMCP) {
 	// Register the suggest_tags prompt with the server
@@ -125,6 +131,12 @@ For each tag I approve, if it does not yet exist, create it with the EpicMe "cre
 	 * MCP "listChanged" notifications to connected clients, informing them
 	 * that the available prompts have changed. This is similar to how a smart
 	 * vending machine would update its display when snack availability changes.
+	 * 
+	 * Important Implementation Details:
+	 * - We check the current state before enabling/disabling to avoid unnecessary
+	 *   listChanged events (though the SDK may optimize this in the future)
+	 * - The subscription mechanism depends on your specific database implementation
+	 * - Each database will have its own subscription mechanisms for change notifications
 	 */
 	async function updatePrompts() {
 		const entries = await agent.db.getEntries()
@@ -132,10 +144,12 @@ For each tag I approve, if it does not yet exist, create it with the EpicMe "cre
 		if (entries.length > 0) {
 			// Enable the prompt when entries are available
 			// This allows users to get tag suggestions for their entries
+			// We check if it's already enabled to avoid unnecessary listChanged events
 			if (!suggestTagsPrompt.enabled) suggestTagsPrompt.enable()
 		} else {
 			// Disable the prompt when no entries exist
 			// This prevents users from trying to suggest tags for non-existent entries
+			// We check if it's already disabled to avoid unnecessary listChanged events
 			if (suggestTagsPrompt.enabled) suggestTagsPrompt.disable()
 		}
 	}
@@ -143,13 +157,20 @@ For each tag I approve, if it does not yet exist, create it with the EpicMe "cre
 	// Subscribe to database changes to automatically update prompt availability
 	// Whenever entries are added, removed, or modified, this callback will run
 	// and update the prompt state accordingly
+	// 
+	// Note: The subscription mechanism depends on your specific database implementation.
+	// Different databases will have their own mechanisms for change notifications.
+	// For external data sources, you'll need to implement your own subscription system.
 	agent.db.subscribe(updatePrompts)
 	
 	// Run the initial update to set the correct prompt state on startup
 	// This ensures the prompt starts in the right state based on current data
 	await updatePrompts()
 	
-	// Note: While the MCP Inspector supports list change notifications, it does not
-	// currently automatically refresh the UI when lists change. For testing dynamic
-	// behavior, rely on automated tests rather than manual inspection in the MCP Inspector.
+	// Testing Notes:
+	// - While the MCP Inspector supports list change notifications, it does not
+	//   currently automatically refresh the UI when lists change
+	// - For testing dynamic behavior, rely on automated tests rather than manual inspection
+	// - You can test by deleting the database (no prompts) then creating entries (prompts appear)
+	// - The client will receive "prompts list changed" notifications when state changes
 }
